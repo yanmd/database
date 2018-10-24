@@ -1,0 +1,75 @@
+#1. 查询销售量最高的产品的前两名(pname，volume)
+
+select pname, total
+from Production p,
+     (select pid, sum(volume) total from Deal group by pid order by total desc limit 2) temp
+where p.pid = temp.pid;
+
+#2. 查询 2017 年生产的产品的总销量(pname，volume)
+
+select pname, total
+from Production p,
+     (select pid, sum(volume) total from Deal group by pid order by total) temp
+where year(p.pdate) = 2017
+  and p.pid = temp.pid;
+
+#3. 查询产品编号为 2 且销售量超过 100 的销售人员的姓名及所在的公司(sname，aname)
+
+select aname, sname
+from Sales s,
+     Agent a
+where s.aid = a.aid
+  and s.sid in
+      (select sid from Deal where pid = '2'
+                              and volume > 100);
+
+#4. 查询所有代理商所有产品的销量(aname，pname，volume)
+
+select aname, pname, total
+from Agent a,
+     Production p,
+     (select a.aid, p.pid, sum(volume) total
+      from Agent a,
+           Deal d,
+           Production p,
+           Sales s
+      where a.aid = s.aid
+        and d.pid = p.pid
+        and s.sid = d.sid
+      group by a.aid, p.pid) temp
+where a.aid = temp.aid
+  and p.pid = temp.pid;
+
+#5. 查询每个产品有多少个销售人员在销售(pname，scount(计数))
+
+select pname, total
+from Production p,
+     (select pid, count(*) total from Deal group by pid) temp
+where p.pid = temp.pid;
+
+#6. 查询名称包含 BBB 的代理商中的所有销售人员(aname，sname)
+select aname, sname
+from Agent a,
+     Sales s
+where aname like '%BBB%'
+  and a.aid = s.aid;
+
+#7. 查询总销量最差的产品(pname，volume)
+
+select pname, total
+from Production p,
+     (select pid, sum(volume) total from Deal group by pid order by total limit 1) temp
+where temp.pid = p.pid;
+
+#8. 查询每种产品销售总量最高的销售人员(pname，sname，volume)
+
+select pname, sname, maxVolume
+from Production p,
+     Sales S,
+     (select sid, temp.pid, maxVolume
+      from Deal d,
+           (select pid, max(cast(volume as unsigned)) maxVolume from Deal group by pid) temp
+      where d.pid = temp.pid
+        and d.volume = maxVolume) temp
+where temp.pid = p.pid
+  and temp.sid = s.sid;
